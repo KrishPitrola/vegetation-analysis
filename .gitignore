@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+.env/
+*.h5
+*.pt
+*.pth
+*.log
+.DS_Store
+node_modules/
+dist/
+build/
+.vscode/

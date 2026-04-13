@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VegeVision — AI Vegetation Analysis System</title>
+  <meta name="description" content="Upload satellite or aerial imagery to instantly classify land-cover and detect trees with AI-powered deep learning models." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ─── Animated background ──────────────────────────────────────── -->
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ─── Header ───────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="logo" href="#" aria-label="VegeVision home">
+        <span class="logo-icon" aria-hidden="true">🌿</span>
+        <span class="logo-text">VegeVision</span>
+      </a>
+      <nav class="header-nav" aria-label="Modes">
+        <span class="nav-badge" id="statusBadge">● Offline</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ─── Hero ─────────────────────────────────────────────────────── -->
+  <section class="hero" aria-labelledby="heroTitle">
+    <div class="hero-inner">
+      <span class="hero-tag">AI · Deep Learning · Earth Observation</span>
+      <h1 class="hero-title" id="heroTitle">
+        Unmask Earth's<br />
+        <span class="gradient-text">Green Canopy</span>
+      </h1>
+      <p class="hero-sub">
+        Upload your satellite or aerial imagery and let our models classify
+        land cover and detect individual trees in seconds.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─── Main card ─────────────────────────────────────────────────── -->
+  <main class="main-content" id="main">
+    <div class="card glass" role="main">
+
+      <!-- Step 1 — Upload -->
+      <section class="card-section" aria-labelledby="uploadLabel">
+        <div class="step-badge">01</div>
+        <label class="step-title" id="uploadLabel" for="imageInput">
+          Upload Image
+        </label>
+        <p class="step-desc">
+          Supported formats: JPG, PNG, TIF, BMP, WebP
+        </p>
+
+        <!-- Drop zone -->
+        <div class="drop-zone" id="dropZone" tabindex="0"
+             role="button" aria-label="Click or drag and drop an image here">
+          <div class="drop-zone-inner">
+            <div class="drop-icon" aria-hidden="true">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <p class="drop-text">Drag &amp; drop your image here</p>
+            <p class="drop-or">or</p>
+            <label class="btn btn-outline" for="imageInput" tabindex="-1">
+              Browse Files
+            </label>
+            <input type="file" id="imageInput" accept="image/*,.tif,.tiff"
+                   class="sr-only" aria-label="Choose image file" />
+          </div>
+
+          <!-- Preview -->
+          <div class="preview-wrap hidden" id="previewWrap">
+            <img src="" alt="Preview of uploaded image" id="previewImg" class="preview-img" />
+            <button class="remove-btn" id="removeBtn"
+                    aria-label="Remove uploaded image" title="Remove">✕</button>
+            <p class="preview-name" id="previewName"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 2 — Mode -->
+      <section class="card-section" aria-labelledby="modeLabel">
+        <div class="step-badge">02</div>
+        <p class="step-title" id="modeLabel">Select Analysis Mode</p>
+        <p class="step-desc">Choose how the AI should interpret your image.</p>
+
+        <div class="mode-grid" role="radiogroup" aria-labelledby="modeLabel">
+
+          <!-- Satellite -->
+          <label class="mode-card" id="modeSatelliteLabel" for="modeSatellite"
+                 tabindex="0" role="radio" aria-checked="false">
+            <input type="radio" name="analysisMode" value="satellite"
+                   id="modeSatellite" class="sr-only" />
+            <div class="mode-icon" aria-hidden="true">🛰️</div>
+            <div class="mode-info">
+              <span class="mode-name">Satellite Analysis</span>
+              <span class="mode-desc">EuroSAT land-cover classification (10 classes)</span>
+            </div>
+            <span class="mode-check" aria-hidden="true">✓</span>
+          </label>
+
+          <!-- Tree Detection -->
+          <label class="mode-card" id="modeTreeLabel" for="modeTree"
+                 tabindex="0" role="radio" aria-checked="false">
+            <input type="radio" name="analysisMode" value="trees"
+                   id="modeTree" class="sr-only" />
+            <div class="mode-icon" aria-hidden="true">🌳</div>
+            <div class="mode-info">
+              <span class="mode-name">Tree Detection</span>
+              <span class="mode-desc">DeepForest object detection with bounding boxes</span>
+            </div>
+            <span class="mode-check" aria-hidden="true">✓</span>
+          </label>
+
+          <!-- Auto Detect -->
+          <label class="mode-card mode-card-auto" id="modeAutoLabel" for="modeAuto"
+                 tabindex="0" role="radio" aria-checked="false">
+            <input type="radio" name="analysisMode" value="auto"
+                   id="modeAuto" class="sr-only" />
+            <div class="mode-icon" aria-hidden="true">⚡</div>
+            <div class="mode-info">
+              <span class="mode-name">Auto Detect</span>
+              <span class="mode-desc">Let the AI decide the best analysis type</span>
+            </div>
+            <span class="mode-check" aria-hidden="true">✓</span>
+          </label>
+
+        </div>
+      </section>
+
+      <!-- Step 3 — Submit -->
+      <section class="card-section submit-section" aria-label="Submit">
+        <div class="step-badge">03</div>
+        <button class="btn btn-primary btn-submit" id="analyzeBtn"
+                disabled aria-disabled="true">
+          <span class="btn-text">Analyze Image</span>
+          <span class="btn-spinner hidden" aria-hidden="true"></span>
+        </button>
+        <p class="submit-hint" id="submitHint">
+          Upload an image and select a mode to continue.
+        </p>
+      </section>
+
+    </div><!-- /card -->
+
+    <!-- ─── Results panel ──────────────────────────────────────────── -->
+    <section class="results-panel hidden" id="resultsPanel"
+             aria-labelledby="resultsPanelTitle" aria-live="polite">
+
+      <div class="results-header">
+        <h2 class="results-title" id="resultsPanelTitle">
+          <span class="results-icon" aria-hidden="true" id="resultsIcon">📊</span>
+          Analysis Results
+        </h2>
+        <button class="btn btn-ghost btn-sm" id="newAnalysisBtn"
+                aria-label="Start new analysis">← New Analysis</button>
+      </div>
+
+      <!-- Error state -->
+      <div class="result-error hidden" id="resultError" role="alert">
+        <span aria-hidden="true">⚠️</span>
+        <p id="errorMsg">An error occurred.</p>
+      </div>
+
+      <!-- Satellite results -->
+      <div class="result-satellite hidden" id="resultSatellite">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-label">Predicted Class</span>
+            <span class="stat-value" id="statClass">—</span>
+          </div>
+          <div class="stat-card stat-card-accent">
+            <span class="stat-label">Confidence</span>
+            <span class="stat-value" id="statConf">—</span>
+          </div>
+          <div class="stat-card stat-card-green">
+            <span class="stat-label">Est. Vegetation Coverage</span>
+            <span class="stat-value" id="statSatCoverage">—</span>
+            <span class="stat-sub" id="statSatCoverageRange"></span>
+          </div>
+        </div>
+        <div class="confidence-bar-wrap" aria-hidden="true">
+          <div class="confidence-bar" id="confidenceBar" style="width:0%"></div>
+        </div>
+        <div class="vegetation-msg" id="vegetationMsg"></div>
+        <div class="annotated-img-wrap" style="margin-top:20px;">
+          <p class="img-label">Uploaded Image</p>
+          <img src="" alt="Uploaded satellite image" id="satellitePreviewImg" class="annotated-img" />
+        </div>
+      </div>
+
+      <!-- Tree detection results -->
+      <div class="result-trees hidden" id="resultTrees">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-label">Trees Detected</span>
+            <span class="stat-value" id="statTreeCount">—</span>
+          </div>
+          <div class="stat-card stat-card-accent">
+            <span class="stat-label">Vegetation Level</span>
+            <span class="stat-value" id="statVegLevel">—</span>
+          </div>
+          <div class="stat-card stat-card-green">
+            <span class="stat-label">Vegetation Coverage</span>
+            <span class="stat-value" id="statCoverage">—</span>
+            <span class="coverage-bar-wrap" id="coverageBarWrap" aria-hidden="true">
+              <span class="coverage-bar" id="coverageBar" style="width:0%"></span>
+            </span>
+          </div>
+        </div>
+        <div class="veg-level-indicator" id="vegLevelIndicator" aria-label="Vegetation level indicator">
+          <div class="veg-level-bar">
+            <div class="veg-segment veg-low">Low</div>
+            <div class="veg-segment veg-mod">Moderate</div>
+            <div class="veg-segment veg-high">High</div>
+          </div>
+          <div class="veg-marker" id="vegMarker"></div>
+        </div>
+        <div class="annotated-img-wrap">
+          <p class="img-label">Annotated Image</p>
+          <img src="" alt="Annotated image showing detected trees with bounding boxes"
+               id="annotatedImg" class="annotated-img" />
+          <a class="btn btn-outline btn-sm download-btn" id="downloadBtn"
+             href="#" download="tree_detection_result.png">
+            ⬇ Download Result
+          </a>
+        </div>
+      </div>
+
+    </section><!-- /results -->
+  </main>
+
+  <!-- ─── Footer ───────────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <p>VegeVision &copy; 2025 &mdash; Built with FastAPI · TensorFlow · DeepForest · OpenCV</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
