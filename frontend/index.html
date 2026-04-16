@@ -127,18 +127,19 @@
             <span class="mode-check" aria-hidden="true">✓</span>
           </label>
 
-          <!-- Auto Detect -->
-          <label class="mode-card mode-card-auto" id="modeAutoLabel" for="modeAuto"
+          <!-- Leaf Detection -->
+          <label class="mode-card" id="modeLeafLabel" for="modeLeaf"
                  tabindex="0" role="radio" aria-checked="false">
-            <input type="radio" name="analysisMode" value="auto"
-                   id="modeAuto" class="sr-only" />
-            <div class="mode-icon" aria-hidden="true">⚡</div>
+            <input type="radio" name="analysisMode" value="leaf"
+                   id="modeLeaf" class="sr-only" />
+            <div class="mode-icon" aria-hidden="true">🌿</div>
             <div class="mode-info">
-              <span class="mode-name">Auto Detect</span>
-              <span class="mode-desc">Let the AI decide the best analysis type</span>
+              <span class="mode-name">Leaf Detection</span>
+              <span class="mode-desc">PlantVillage species & disease classifier</span>
             </div>
             <span class="mode-check" aria-hidden="true">✓</span>
           </label>
+
 
         </div>
       </section>
@@ -239,6 +240,29 @@
              href="#" download="tree_detection_result.png">
             ⬇ Download Result
           </a>
+        </div>
+      </div>
+
+      </div>
+
+      <!-- Leaf results -->
+      <div class="result-leaf hidden" id="resultLeaf">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-label">Predicted Species/Disease</span>
+            <span class="stat-value" id="statLeafClass">—</span>
+          </div>
+          <div class="stat-card stat-card-accent">
+            <span class="stat-label">Confidence</span>
+            <span class="stat-value" id="statLeafConf">—</span>
+          </div>
+        </div>
+        <div class="confidence-bar-wrap" aria-hidden="true">
+          <div class="confidence-bar" id="leafConfidenceBar" style="width:0%"></div>
+        </div>
+        <div class="annotated-img-wrap" style="margin-top:20px;">
+          <p class="img-label">Uploaded Image</p>
+          <img src="" alt="Uploaded leaf image" id="leafPreviewImg" class="annotated-img" />
         </div>
       </div>
 

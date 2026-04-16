@@ -342,11 +342,7 @@ label.step-title { cursor: pointer; }
   background: rgba(78,205,130,0.1);
   box-shadow: 0 0 0 4px var(--clr-green-glow), var(--shadow-glow);
 }
-.mode-card-auto.selected {
-  border-color: var(--clr-teal);
-  background: var(--clr-teal-glow);
-  box-shadow: 0 0 0 4px var(--clr-teal-glow);
-}
+
 .mode-icon { font-size: 1.8rem; flex-shrink: 0; }
 .mode-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .mode-name { font-weight: 600; font-size: 0.95rem; }

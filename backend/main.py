@@ -1,9 +1,15 @@
 import os
-import io
+import sys
 import base64
 import logging
 import tempfile
+from contextlib import asynccontextmanager
 from pathlib import Path
+
+# Ensure project root is on sys.path so we can import predict.py / model.py
+_PROJECT_ROOT = str(Path(__file__).resolve().parent.parent)
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 import cv2
 import numpy as np
@@ -14,17 +20,38 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from utils.satellite import preprocess_image, predict_satellite, get_vegetation_message, get_estimated_coverage
-from utils.tree_detection import detect_trees, draw_boxes, classify_vegetation_level, compute_coverage
+from utils.tree_detection import detect_trees, draw_boxes
+from utils.predict import load_predictor, predict as leaf_predict
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)s  %(message)s")
 logger = logging.getLogger(__name__)
+
+# ─── Leaf predictor — loaded once at startup, shared via app.state ────────────
+_LEAF_MODEL_PATH  = str(Path(__file__).resolve().parent.parent / "models" / "leaf_model.keras")
+_LEAF_LABELS_DIR  = str(Path(__file__).resolve().parent.parent / "training_archive" / "PlantVillage" / "train")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Load the leaf predictor once on startup; release on shutdown."""
+    logger.info("[Startup] Loading leaf predictor from '%s'...", _LEAF_MODEL_PATH)
+    app.state.leaf_predictor = load_predictor(
+        model_path=_LEAF_MODEL_PATH,
+        labels_dir=_LEAF_LABELS_DIR,
+    )
+    logger.info("[Startup] Leaf predictor ready (%d classes).",
+                app.state.leaf_predictor.num_classes)
+    yield
+    # Nothing to clean up for TF models
+    logger.info("[Shutdown] Leaf predictor released.")
+
 
 # ─── App ──────────────────────────────────────────────────────────────────────
 app = FastAPI(
     title="Vegetation Analysis System",
     description="AI-powered satellite image classification and tree detection",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -121,13 +148,9 @@ async def predict_trees_endpoint(file: UploadFile = File(...)):
 
         try:
             predictions = detect_trees(tmp_path)
-            annotated_bgr = draw_boxes(tmp_path, predictions)
+            annotated_bgr, tree_count, vegetation_level, coverage_percentage = draw_boxes(tmp_path, predictions)
         finally:
             os.unlink(tmp_path)
-
-        tree_count = len(predictions)
-        vegetation_level = classify_vegetation_level(tree_count)
-        coverage_percentage = compute_coverage(predictions, annotated_bgr)
 
         # Encode annotated image as base64 PNG
         _, buffer = cv2.imencode(".png", annotated_bgr)
@@ -150,37 +173,58 @@ async def predict_trees_endpoint(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-# ─── Health check ─────────────────────────────────────────────────────────────
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
-
-
-# ─── Auto-detect endpoint (bonus) ─────────────────────────────────────────────
-@app.post("/predict-auto")
-async def predict_auto_endpoint(file: UploadFile = File(...)):
+# ─── Leaf classification endpoint ────────────────────────────────────────────
+@app.post("/predict-leaf")
+async def predict_leaf_endpoint(file: UploadFile = File(...)):
     """
-    Heuristic: if the image looks small / coarse → satellite; else → tree detection.
-    Uses object-density metric on the image to decide.
+    POST /predict-leaf
+    ------------------
+    Accept a leaf image upload, run the MobileNetV2 PlantVillage classifier,
+    and return the predicted species/disease label with confidence.
+
+    Request : multipart/form-data  field name = "file"
+    Response:
+        {
+          "species":    "Apple___Apple_scab",
+          "confidence": 0.9646
+        }
     """
     validate_image(file)
 
     try:
         contents = await file.read()
-        nparr = np.frombuffer(contents, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if img is None:
-            raise HTTPException(status_code=400, detail="Cannot decode image.")
+        if len(contents) == 0:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
-        # Heuristic: high-frequency content → likely an aerial/ground-level photo of trees
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        lap_var = cv2.Laplacian(gray, cv2.CV_64F).var()
-        mode = "tree_detection" if lap_var > 400 else "satellite"
+        # Save to a temp file — predict.preprocess() needs a file path
+        suffix = Path(file.filename or "leaf.jpg").suffix.lower() or ".jpg"
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(contents)
+            tmp_path = tmp.name
 
-        return JSONResponse({"status": "success", "detected_mode": mode})
+        try:
+            result = leaf_predict(
+                image_path=tmp_path,
+                predictor=app.state.leaf_predictor,
+                top_n=5,
+            )
+        finally:
+            os.unlink(tmp_path)   # always clean up, even on error
+
+        logger.info(
+            "[Leaf] file=%s  species=%s  confidence=%.4f",
+            file.filename, result["label"], result["confidence"],
+        )
+        return JSONResponse({
+            "species":    result["label"],
+            "confidence": round(result["confidence"], 4),
+        })
 
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error(f"[Auto] Error: {exc}", exc_info=True)
+        logger.error("[Leaf] Prediction error: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+

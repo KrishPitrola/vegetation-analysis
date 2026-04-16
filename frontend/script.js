@@ -30,6 +30,7 @@ const resultError       = document.getElementById('resultError');
 const errorMsg          = document.getElementById('errorMsg');
 const resultSatellite   = document.getElementById('resultSatellite');
 const resultTrees       = document.getElementById('resultTrees');
+const resultLeaf        = document.getElementById('resultLeaf');
 
 const statClass       = document.getElementById('statClass');
 const statConf        = document.getElementById('statConf');
@@ -45,7 +46,12 @@ const statSatCoverageRange = document.getElementById('statSatCoverageRange');
 const satellitePreviewImg  = document.getElementById('satellitePreviewImg');
 const annotatedImg    = document.getElementById('annotatedImg');
 const downloadBtn     = document.getElementById('downloadBtn');
-const statusBadge     = document.getElementById('statusBadge');
+
+
+const statLeafClass     = document.getElementById('statLeafClass');
+const statLeafConf      = document.getElementById('statLeafConf');
+const leafConfidenceBar = document.getElementById('leafConfidenceBar');
+const leafPreviewImg    = document.getElementById('leafPreviewImg');
 
 // ─── State ────────────────────────────────────────────────────────────────────
 let uploadedFile  = null;
@@ -62,18 +68,7 @@ function toggleClass(el, cls, force) {
 function showEl(el)  { toggleClass(el, 'hidden', false); }
 function hideEl(el)  { toggleClass(el, 'hidden', true);  }
 
-// ─── Server health ping ───────────────────────────────────────────────────────
-async function pingServer() {
-  try {
-    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
-    if (res.ok) {
-      statusBadge.textContent = '● Online';
-      statusBadge.classList.add('online');
-    }
-  } catch { /* server not running — badge stays Offline */ }
-}
-pingServer();
-setInterval(pingServer, 15000);
+
 
 // ─── File handling ────────────────────────────────────────────────────────────
 function setFile(file) {
@@ -190,6 +185,7 @@ function resetResults() {
   hideEl(resultError);
   hideEl(resultSatellite);
   hideEl(resultTrees);
+  hideEl(resultLeaf);
 }
 
 // ─── Show error ───────────────────────────────────────────────────────────────
@@ -198,6 +194,7 @@ function showError(msg) {
   showEl(resultError);
   hideEl(resultSatellite);
   hideEl(resultTrees);
+  hideEl(resultLeaf);
   resultsIcon.textContent = '⚠️';
   showEl(resultsPanel);
   resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -230,6 +227,7 @@ function renderSatelliteResult(data) {
 
   hideEl(resultError);
   hideEl(resultTrees);
+  hideEl(resultLeaf);
   showEl(resultSatellite);
   showEl(resultsPanel);
   resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -255,19 +253,34 @@ function renderTreeResult(data) {
 
   hideEl(resultError);
   hideEl(resultSatellite);
+  hideEl(resultLeaf);
   showEl(resultTrees);
   showEl(resultsPanel);
   resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ─── Auto-detect helper ───────────────────────────────────────────────────────
-async function autoDetectMode(file) {
-  const fd = new FormData();
-  fd.append('file', file);
-  const res = await fetch(`${API_BASE}/predict-auto`, { method: 'POST', body: fd });
-  if (!res.ok) throw new Error('Auto-detect failed. Please select a mode manually.');
-  const data = await res.json();
-  return data.detected_mode; // 'satellite' | 'tree_detection'
+// ─── Render leaf result ────────────────────────────────────────────────────── 
+function renderLeafResult(data) {
+  resultsIcon.textContent = '🌿';
+  statLeafClass.textContent = data.species;
+  // Convert 0-1 confidence to percentage
+  const confPercent = data.confidence * 100;
+  statLeafConf.textContent  = `${confPercent.toFixed(2)} %`;
+
+  // Show uploaded image preview
+  if (previewUrl) leafPreviewImg.src = previewUrl;
+
+  // Animate confidence bar
+  setTimeout(() => {
+    leafConfidenceBar.style.width = `${Math.min(confPercent, 100)}%`;
+  }, 50);
+
+  hideEl(resultError);
+  hideEl(resultSatellite);
+  hideEl(resultTrees);
+  showEl(resultLeaf);
+  showEl(resultsPanel);
+  resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ─── Main analyze handler ─────────────────────────────────────────────────────
@@ -280,23 +293,14 @@ analyzeBtn.addEventListener('click', async () => {
   try {
     let mode = selectedMode;
 
-    // Auto-detect: hit heuristic endpoint first, then route
-    if (mode === 'auto') {
-      try {
-        const detected = await autoDetectMode(uploadedFile);
-        mode = detected === 'tree_detection' ? 'trees' : 'satellite';
-      } catch (err) {
-        // If auto-detect fails, default to satellite
-        mode = 'satellite';
-      }
-    }
-
     const fd = new FormData();
     fd.append('file', uploadedFile);
 
     let endpoint, data;
     if (mode === 'satellite') {
       endpoint = `${API_BASE}/predict-satellite`;
+    } else if (mode === 'leaf') {
+      endpoint = `${API_BASE}/predict-leaf`;
     } else {
       endpoint = `${API_BASE}/predict-trees`;
     }
@@ -312,6 +316,8 @@ analyzeBtn.addEventListener('click', async () => {
 
     if (mode === 'satellite') {
       renderSatelliteResult(data);
+    } else if (mode === 'leaf') {
+      renderLeafResult(data);
     } else {
       renderTreeResult(data);
     }
